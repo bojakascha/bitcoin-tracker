@@ -2,11 +2,62 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bitcoin Tracker">
+    <meta name="theme-color" content="#0c4a6e">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/bitcoin-tracker/manifest.json">
+    
+    <!-- Apple Touch Icons (for iOS home screen) -->
+    <link rel="apple-touch-icon" href="/bitcoin-tracker/icon-192.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/bitcoin-tracker/icon-192.png">
+    
     <title>Bitcoin Tracker</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Register service worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          // Unregister any existing service workers first (for development)
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            for (let registration of registrations) {
+              registration.unregister();
+              console.log('Unregistered old service worker');
+            }
+            // Clear all caches
+            if ('caches' in window) {
+              return caches.keys().then((names) => {
+                console.log('Clearing caches:', names);
+                return Promise.all(names.map((name) => caches.delete(name)));
+              });
+            }
+          }).then(() => {
+            // Small delay to ensure cleanup completes
+            return new Promise(resolve => setTimeout(resolve, 100));
+          }).then(() => {
+            // Register new service worker
+            return navigator.serviceWorker.register('/bitcoin-tracker/sw.js');
+          }).then((registration) => {
+            console.log('SW registered: ', registration);
+            // Force update
+            registration.update();
+          }).catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
