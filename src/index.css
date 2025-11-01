@@ -3,22 +3,28 @@
 @tailwind utilities;
 
 html, body, #root {
-  height: 100%;
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 body {
   position: fixed;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none; /* Prevent pull-to-refresh and overscroll */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent pull-to-refresh on mobile */
-body {
-  overscroll-behavior-y: none;
+#root {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }

@@ -4,7 +4,7 @@
   "description": "Real-time Bitcoin price tracker with market data",
   "start_url": "/bitcoin-tracker/",
   "scope": "/bitcoin-tracker/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#0c4a6e",
   "theme_color": "#0c4a6e",
   "orientation": "portrait",
