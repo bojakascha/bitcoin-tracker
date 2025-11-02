@@ -6,11 +6,11 @@ import { ECB_CURRENCIES } from './utils/ecbCurrencies';
 function App() {
   // Initialize from localStorage or defaults
   const [currency, setCurrency] = useState(() => {
-    const saved = localStorage.getItem('bitcoin-tracker-currency');
+    const saved = localStorage.getItem('monoticker-currency');
     return saved || 'USD';
   });
   const [timeWindow, setTimeWindow] = useState(() => {
-    const saved = localStorage.getItem('bitcoin-tracker-timeWindow');
+    const saved = localStorage.getItem('monoticker-timeWindow');
     return saved || '24h';
   });
   const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
@@ -30,12 +30,12 @@ function App() {
   
   // Save currency to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('bitcoin-tracker-currency', currency);
+    localStorage.setItem('monoticker-currency', currency);
   }, [currency]);
 
   // Save timeWindow to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('bitcoin-tracker-timeWindow', timeWindow);
+    localStorage.setItem('monoticker-timeWindow', timeWindow);
   }, [timeWindow]);
 
   // Reset timeWindow if it's set to an unsupported value (only once on mount)
@@ -43,7 +43,7 @@ function App() {
     if (!timeWindows.includes(timeWindow)) {
       const defaultWindow = '24h';
       setTimeWindow(defaultWindow);
-      localStorage.setItem('bitcoin-tracker-timeWindow', defaultWindow);
+      localStorage.setItem('monoticker-timeWindow', defaultWindow);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
@@ -502,8 +502,8 @@ function App() {
             }}
           />
           
-          {/* Currency Selector - Centered Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+          {/* Currency Selector - Top Aligned Modal */}
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-6 pointer-events-none">
             <div 
               data-currency-modal
               className="w-full max-w-md bg-slate-950/98 border-2 border-amber-400/70 rounded-2xl shadow-[0_0_30px_rgba(251,191,36,0.5)] backdrop-blur-md overflow-hidden pointer-events-auto max-h-[80vh] flex flex-col"
@@ -554,7 +554,6 @@ function App() {
                   <div className="p-2">
                     {filteredCurrencies.map(curr => {
                       const handleCurrencySelect = () => {
-                        console.log('Selecting currency:', curr.id);
                         setCurrency(curr.id);
                         setShowCurrencyMenu(false);
                         setCurrencySearch('');
@@ -635,7 +634,6 @@ function App() {
               <div className="p-2">
                 {timeWindows.map(tw => {
                   const handleTimeSelect = () => {
-                    console.log('Selecting time interval:', tw);
                     setTimeWindow(tw);
                     setShowTimeMenu(false);
                   };

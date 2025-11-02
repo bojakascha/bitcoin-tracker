@@ -1,5 +1,5 @@
-// Service Worker for Bitcoin Tracker PWA
-const CACHE_NAME = 'bitcoin-tracker-v2'; // Updated to force cache refresh
+// Service Worker for monoticker PWA
+const CACHE_NAME = 'monoticker-v1';
 
 // Install event - cache resources
 self.addEventListener('install', (event) => {

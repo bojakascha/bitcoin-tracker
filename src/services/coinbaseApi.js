@@ -64,7 +64,6 @@ class CoinbaseApi {
       
       const convertedAmount = usdAmount * exchangeRate;
       
-      console.log(`Converted BTC price from USD ${usdAmount} to ${currency} ${convertedAmount} using ECB rate ${exchangeRate}`);
       
       return {
         amount: convertedAmount,
@@ -257,8 +256,6 @@ class CoinbaseApi {
       throw new Error('Invalid response format from API');
     }
 
-    // Log for debugging
-    console.log(`Coinbase Exchange API: Received ${data.length} candles for USD, granularity ${granularity}s`);
 
     if (data.length === 0) {
       console.warn('Coinbase Exchange API: No candles returned', {
@@ -366,7 +363,6 @@ class CoinbaseApi {
       // If we have historical rates, use them; otherwise use latest rate for all
       const exchangeRate = ecbData.rate;
       
-      console.log(`Converting ${usdCandles.length} candles from USD to ${targetCurrency} using rate: ${exchangeRate}`);
       
       // Convert all candle prices using the exchange rate
       return usdCandles.map(candle => ({

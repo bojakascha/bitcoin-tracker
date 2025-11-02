@@ -1,5 +1,5 @@
 {
-  "name": "bitcoin-tracker",
+  "name": "monoticker",
   "private": true,
   "version": "1.0.0",
   "type": "module",

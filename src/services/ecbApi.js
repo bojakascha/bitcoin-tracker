@@ -101,16 +101,6 @@ class EcbApi {
     url.searchParams.append('format', 'jsondata');
 
     const fullUrl = url.toString();
-    console.log('ECB API request - Full URL with all params:', fullUrl);
-    console.log('ECB API request - Base URL:', this.baseUrl);
-    console.log('ECB API request - Path:', `/D.${currency}.EUR.SP00.A`);
-    console.log('ECB API request - Params:', {
-      currencyToEur: `${currency}->EUR`,
-      startPeriod,
-      endPeriod,
-      detail: 'dataonly',
-      format: 'jsondata'
-    });
 
     try {
       const response = await fetch(fullUrl);
@@ -127,8 +117,6 @@ class EcbApi {
       }
 
       // Log response details before parsing
-      console.log('ECB API response status:', response.status, response.statusText);
-      console.log('ECB API response headers:', Object.fromEntries(response.headers.entries()));
       
       // Check if response body is empty (ECB returns empty file when no data)
       const responseText = await response.text();
@@ -203,7 +191,6 @@ class EcbApi {
       // Example: D.SEK.EUR = 11.5 means EUR->SEK = 11.5 (1 EUR = 11.5 SEK)
       const eurToCurrency = currencyPerEur;
       
-      console.log(`ECB API: Retrieved EUR->${currency} rate: ${eurToCurrency} (from D.${currency}.EUR = ${currencyPerEur})`);
 
       return eurToCurrency;
     } catch (error) {
@@ -243,7 +230,6 @@ class EcbApi {
     url.searchParams.append('format', 'jsondata');
 
     const fullUrl = url.toString();
-    console.log(`ECB API fallback - Fetching latest available rate with 90-day range: ${fullUrl}`);
 
     try {
       const response = await fetch(fullUrl);
@@ -305,7 +291,6 @@ class EcbApi {
       // ECB returns "{currency} per EUR" which IS already EUR->currency (no inversion needed)
       const eurToCurrency = currencyPerEur;
       
-      console.log(`ECB API fallback: Retrieved latest available EUR->${currency} rate: ${eurToCurrency} (from D.${currency}.EUR = ${currencyPerEur}, 90-day search)`);
 
       return eurToCurrency;
     } catch (error) {

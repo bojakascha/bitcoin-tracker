@@ -1,6 +1,6 @@
 {
-  "name": "Bitcoin Tracker",
-  "short_name": "BTC Tracker",
+  "name": "monoticker",
+  "short_name": "monoticker",
   "description": "Real-time Bitcoin price tracker with market data",
   "start_url": "/bitcoin-tracker/",
   "scope": "/bitcoin-tracker/",
