@@ -184,11 +184,15 @@ function App() {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showCurrencyMenu && !event.target.closest('.currency-menu-container')) {
+      // Check if click is inside the currency menu modal
+      const currencyModal = document.querySelector('[data-currency-modal]');
+      if (showCurrencyMenu && currencyModal && !currencyModal.contains(event.target) && !event.target.closest('.currency-menu-container')) {
         setShowCurrencyMenu(false);
         setCurrencySearch('');
       }
-      if (showTimeMenu && !event.target.closest('.time-menu-container')) {
+      // Check if click is inside the time menu modal
+      const timeModal = document.querySelector('[data-time-modal]');
+      if (showTimeMenu && timeModal && !timeModal.contains(event.target) && !event.target.closest('.time-menu-container')) {
         setShowTimeMenu(false);
       }
     };
@@ -302,51 +306,6 @@ function App() {
                     {currency}
                     <ChevronDown className="w-4 h-4" />
                   </button>
-                  
-                  {showCurrencyMenu && (
-                    <div className="absolute top-full mt-2 left-0 w-72 bg-slate-800/95 border border-cyan-500/50 rounded-lg shadow-[0_0_20px_rgba(34,211,238,0.3)] backdrop-blur-md overflow-hidden z-50">
-                      <div className="p-2 border-b border-cyan-500/30">
-                        <input
-                          type="text"
-                          placeholder="Search currencies..."
-                          value={currencySearch}
-                          onChange={(e) => setCurrencySearch(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-900/80 border border-cyan-500/30 rounded-lg text-sm text-white placeholder-cyan-100/50 focus:outline-none focus:border-cyan-500/50"
-                          autoFocus
-                        />
-                      </div>
-                      <div className="max-h-80 overflow-y-auto">
-                        {loadingCurrencies ? (
-                          <div className="px-4 py-8 text-center text-cyan-100/60 text-sm">
-                            Loading currencies...
-                          </div>
-                        ) : filteredCurrencies.length === 0 ? (
-                          <div className="px-4 py-8 text-center text-cyan-100/60 text-sm">
-                            No currencies found
-                          </div>
-                        ) : (
-                          filteredCurrencies.map(curr => (
-                            <button
-                              key={curr.id}
-                              onClick={() => {
-                                setCurrency(curr.id);
-                                setShowCurrencyMenu(false);
-                                setCurrencySearch('');
-                              }}
-                              className={`block w-full px-4 py-2 text-left hover:bg-cyan-500/20 transition-colors ${
-                                curr.id === currency ? 'bg-cyan-500/30 text-cyan-300' : 'text-cyan-100/80'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium">{curr.id}</span>
-                                <span className="text-xs text-cyan-100/50 truncate ml-2">{curr.name}</span>
-                              </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -383,25 +342,6 @@ function App() {
                   {timeWindow}
                   <ChevronDown className="w-3 h-3" />
                 </button>
-                
-                {showTimeMenu && (
-                  <div className="absolute top-full mt-2 right-0 bg-slate-800/95 border border-cyan-500/50 rounded-lg shadow-[0_0_20px_rgba(34,211,238,0.3)] backdrop-blur-md overflow-hidden z-50">
-                    {timeWindows.map(tw => (
-                      <button
-                        key={tw}
-                        onClick={() => {
-                          setTimeWindow(tw);
-                          setShowTimeMenu(false);
-                        }}
-                        className={`block w-full px-4 py-2 text-left text-sm hover:bg-cyan-500/20 transition-colors ${
-                          tw === timeWindow ? 'bg-cyan-500/30 text-cyan-300' : 'text-cyan-100/80'
-                        }`}
-                      >
-                        {tw}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -453,6 +393,183 @@ function App() {
         </div>
 
       </div>
+
+      {/* Currency Selector Modal/Overlay */}
+      {showCurrencyMenu && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            onClick={() => {
+              setShowCurrencyMenu(false);
+              setCurrencySearch('');
+            }}
+          />
+          
+          {/* Currency Selector - Centered Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div 
+              data-currency-modal
+              className="w-full max-w-md bg-slate-800/98 border-2 border-cyan-500/50 rounded-2xl shadow-[0_0_40px_rgba(34,211,238,0.4)] backdrop-blur-md overflow-hidden pointer-events-auto max-h-[80vh] flex flex-col"
+              onMouseDown={(e) => {
+                // Prevent backdrop click when clicking inside modal
+                e.stopPropagation();
+              }}
+            >
+              {/* Header */}
+              <div className="p-4 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-amber-400/10">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-white">Select Currency</h3>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowCurrencyMenu(false);
+                      setCurrencySearch('');
+                    }}
+                    className="text-cyan-300 hover:text-cyan-200 transition-colors text-xl font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search currencies..."
+                  value={currencySearch}
+                  onChange={(e) => setCurrencySearch(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-900/80 border border-cyan-500/30 rounded-lg text-sm text-white placeholder-cyan-100/50 focus:outline-none focus:border-cyan-500/50"
+                  autoFocus
+                />
+              </div>
+              
+              {/* Currency List - Scrollable */}
+              <div className="overflow-y-auto flex-1">
+                {loadingCurrencies ? (
+                  <div className="px-4 py-12 text-center text-cyan-100/60 text-sm">
+                    <Loader2 className="w-6 h-6 animate-spin text-cyan-400 mx-auto mb-2" />
+                    Loading currencies...
+                  </div>
+                ) : filteredCurrencies.length === 0 ? (
+                  <div className="px-4 py-12 text-center text-cyan-100/60 text-sm">
+                    No currencies found
+                  </div>
+                ) : (
+                  <div className="p-2">
+                    {filteredCurrencies.map(curr => {
+                      const handleCurrencySelect = () => {
+                        console.log('Selecting currency:', curr.id);
+                        setCurrency(curr.id);
+                        setShowCurrencyMenu(false);
+                        setCurrencySearch('');
+                      };
+                      
+                      return (
+                        <button
+                          key={curr.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleCurrencySelect();
+                          }}
+                          className={`w-full px-4 py-3 text-left rounded-lg hover:bg-cyan-500/20 transition-colors mb-1 cursor-pointer ${
+                            curr.id === currency ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'text-cyan-100/80'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-base">{curr.id}</span>
+                            <span className="text-xs text-cyan-100/50 text-right ml-4 flex-1">{curr.name}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Time Interval Selector Modal/Overlay */}
+      {showTimeMenu && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            onClick={() => {
+              setShowTimeMenu(false);
+            }}
+          />
+          
+          {/* Time Interval Selector - Centered Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div 
+              data-time-modal
+              className="w-full max-w-xs bg-slate-800/98 border-2 border-cyan-500/50 rounded-2xl shadow-[0_0_40px_rgba(34,211,238,0.4)] backdrop-blur-md overflow-hidden pointer-events-auto max-h-[80vh] flex flex-col"
+              onMouseDown={(e) => {
+                // Prevent backdrop click when clicking inside modal
+                e.stopPropagation();
+              }}
+            >
+              {/* Header */}
+              <div className="p-4 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-amber-400/10">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Select Time Interval</h3>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowTimeMenu(false);
+                    }}
+                    className="text-cyan-300 hover:text-cyan-200 transition-colors text-xl font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              
+              {/* Time Interval List */}
+              <div className="p-2">
+                {timeWindows.map(tw => {
+                  const handleTimeSelect = () => {
+                    console.log('Selecting time interval:', tw);
+                    setTimeWindow(tw);
+                    setShowTimeMenu(false);
+                  };
+                  
+                  return (
+                    <button
+                      key={tw}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleTimeSelect();
+                      }}
+                      className={`w-full px-4 py-3 text-left rounded-lg hover:bg-cyan-500/20 transition-colors mb-1 cursor-pointer ${
+                        tw === timeWindow ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'text-cyan-100/80'
+                      }`}
+                    >
+                      <span className="font-semibold text-base">{tw}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
