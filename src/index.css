@@ -13,12 +13,12 @@ html {
   top: 0;
   left: 0;
   /* Match the app's gradient: from-blue-950 via-slate-900 to-blue-950 */
+  /* Extend background to cover safe areas by using negative positioning */
   background: linear-gradient(to bottom right, #172554, #0f172a, #172554);
-  /* Extend background into safe areas */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  top: calc(-1 * env(safe-area-inset-top));
+  left: calc(-1 * env(safe-area-inset-left));
+  right: calc(-1 * env(safe-area-inset-right));
+  bottom: calc(-1 * env(safe-area-inset-bottom));
 }
 
 body {
@@ -33,8 +33,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none; /* Prevent pull-to-refresh and overscroll */
-  -webkit-overflow-scrolling: touch;
-  /* Extend background into safe areas */
+  overflow: hidden;
+  /* Prevent scrolling - allow manipulation for buttons but no panning */
+  touch-action: manipulation;
+  /* Account for safe areas */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
@@ -42,13 +44,16 @@ body {
 }
 
 #root {
+  position: fixed;
+  top: 0;
+  left: 0;
   height: 100vh;
   height: -webkit-fill-available;
   width: 100vw;
   margin: 0;
   padding: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   background: transparent;
+  /* Prevent scrolling bounce/overscroll */
+  overscroll-behavior: none;
 }

@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, ChevronDown, Loader2 } from 'lucide-react';
 import coinbaseApi from './services/coinbaseApi';
-import coinloreApi from './services/coinloreApi';
-
-// Cache duration for CoinLore data (30 minutes)
-const COINLORE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 function App() {
   const [currency, setCurrency] = useState('USD');
@@ -23,16 +19,12 @@ function App() {
   ]);
   const [loadingCurrencies, setLoadingCurrencies] = useState(true);
   const [currencySearch, setCurrencySearch] = useState('');
-  const [marketCap, setMarketCap] = useState(null);
-  const [volume24h, setVolume24h] = useState(null);
-  const [changes, setChanges] = useState({ '1h': null, '24h': null, '7d': null });
-  const [loadingMarketData, setLoadingMarketData] = useState(true);
+  const [changes, setChanges] = useState({ '1h': null, '24h': null, '7d': null, '30d': null, '1y': null });
+  const [candles, setCandles] = useState([]);
+  const [loadingCandles, setLoadingCandles] = useState(false);
 
-  // Cache for CoinLore data (keyed by currency)
-  const coinloreCache = React.useRef({});
-
-  // CoinLore only supports 1h, 24h, and 7d time windows
-  const timeWindows = ['1h', '24h', '7d'];
+  // Supported time windows: 1h, 24h, 7d, 30d, 1y
+  const timeWindows = ['1h', '24h', '7d', '30d', '1y'];
   
   // Reset timeWindow if it's set to an unsupported value (only once on mount)
   useEffect(() => {
@@ -42,8 +34,8 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
   
-  const currentChange = changes[timeWindow] !== null ? changes[timeWindow] : 0;
-  const isPositive = currentChange >= 0;
+  const currentChange = changes[timeWindow] != null && changes[timeWindow] !== undefined ? changes[timeWindow] : null;
+  const isPositive = currentChange != null ? currentChange >= 0 : false;
 
   // Fetch supported currencies on mount
   useEffect(() => {
@@ -102,84 +94,77 @@ function App() {
     return () => clearInterval(priceInterval);
   }, [currency]);
 
-  // Fetch CoinLore market data (market cap, volume, trends) with caching (every 30 minutes)
+  // Calculate price changes from candle data
+  const calculatePriceChanges = (candleData, timeWindow) => {
+    if (!candleData || candleData.length === 0) {
+      return null;
+    }
+
+    // Get the first (oldest) and last (newest) candles
+    const firstCandle = candleData[0];
+    const lastCandle = candleData[candleData.length - 1];
+
+    if (!firstCandle || !lastCandle) {
+      return null;
+    }
+
+    // Calculate percentage change: ((close - open) / open) * 100
+    const startPrice = firstCandle.open;
+    const endPrice = lastCandle.close;
+
+    if (!startPrice || startPrice === 0) {
+      return null;
+    }
+
+    const change = ((endPrice - startPrice) / startPrice) * 100;
+    return parseFloat(change.toFixed(2));
+  };
+
+  // Update price changes when candles or timeWindow changes
   useEffect(() => {
-    const fetchMarketData = async (useCache = true) => {
-      const cacheKey = `market_${currency.toLowerCase()}`;
-      const cached = coinloreCache.current[cacheKey];
-      
-      // Check cache if not forced refresh
-      if (useCache && cached && (Date.now() - cached.timestamp) < COINLORE_CACHE_DURATION) {
-        console.log('Using cached market data for', currency);
-        setMarketCap(cached.marketCap);
-        setVolume24h(cached.volume24h);
-        setChanges(cached.changes);
-        setLoadingMarketData(false);
-        return;
-      }
+    if (candles.length === 0) {
+      return;
+    }
 
-      setLoadingMarketData(true);
-      
+    // Calculate change for current time window
+    const change = calculatePriceChanges(candles, timeWindow);
+    
+    // Update the changes object with the calculated value for current timeWindow
+    setChanges(prev => ({
+      ...prev,
+      [timeWindow]: change
+    }));
+  }, [candles, timeWindow]);
+
+  // Fetch candlestick data when currency or timeWindow changes
+  useEffect(() => {
+    const fetchCandles = async () => {
+      setLoadingCandles(true);
       try {
-        // Fetch market data from CoinLore (volume, market cap, 24h change)
-        const marketData = await coinloreApi.getBtcMarketData(currency);
-        
-        // Fetch price changes for different time periods from CoinLore
-        // CoinLore supports: 1h, 24h, and 7d (if available)
-        const priceChanges = await coinloreApi.getBtcPriceChanges(currency);
-        
-        const newChanges = {
-          '1h': priceChanges['1h'],
-          '24h': marketData.change24h !== null ? marketData.change24h : priceChanges['24h'],
-          '7d': priceChanges['7d']
-        };
-
-        // Update state
-        setMarketCap(marketData.marketCap);
-        setVolume24h(marketData.volume24h);
-        setChanges(newChanges);
-
-        // Update cache
-        coinloreCache.current[cacheKey] = {
-          marketCap: marketData.marketCap,
-          volume24h: marketData.volume24h,
-          changes: newChanges,
-          timestamp: Date.now()
-        };
+        const candleData = await coinbaseApi.getBtcCandlesForTimeWindow(currency, timeWindow);
+        setCandles(candleData);
       } catch (err) {
-        console.error('Failed to fetch CoinLore market data:', {
+        console.error('Failed to fetch candles:', {
           currency,
+          timeWindow,
           error: err.message,
-          stack: err.stack,
-          name: err.name
+          stack: err.stack
         });
-        // Use cached data if available even if expired
-        if (cached) {
-          console.warn('Using expired cached data due to API error');
-          setMarketCap(cached.marketCap);
-          setVolume24h(cached.volume24h);
-          setChanges(cached.changes);
-        } else {
-          // Set defaults if no cache available
-          setChanges({
-            '1h': null,
-            '24h': null,
-            '7d': null
-          });
-        }
+        // Set empty array on error
+        setCandles([]);
       } finally {
-        setLoadingMarketData(false);
+        setLoadingCandles(false);
       }
     };
 
-    // Fetch immediately on currency change (will use cache if available)
-    fetchMarketData(true);
-    
-    // Set up interval to refresh market data every 30 minutes
-    const marketDataInterval = setInterval(() => fetchMarketData(false), COINLORE_CACHE_DURATION);
-    
-    return () => clearInterval(marketDataInterval);
-  }, [currency]);
+    fetchCandles();
+
+    // Refresh candles every 30 seconds for 1h view, every 5 minutes for 24h/7d views
+    const refreshInterval = timeWindow === '1h' ? 30000 : 300000;
+    const candleInterval = setInterval(fetchCandles, refreshInterval);
+
+    return () => clearInterval(candleInterval);
+  }, [currency, timeWindow]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -207,28 +192,6 @@ function App() {
     curr.name.toLowerCase().includes(currencySearch.toLowerCase())
   );
 
-  // Format large numbers (market cap, volume) with appropriate suffixes
-  const formatLargeNumber = (value, curr) => {
-    if (value === null || value === undefined) return '--';
-    
-    const currencySymbol = getCurrencySymbol(curr);
-    const absValue = Math.abs(value);
-    
-    if (absValue >= 1e12) {
-      return `${currencySymbol}${(value / 1e12).toFixed(2)}T`;
-    } else if (absValue >= 1e9) {
-      return `${currencySymbol}${(value / 1e9).toFixed(2)}B`;
-    } else if (absValue >= 1e6) {
-      return `${currencySymbol}${(value / 1e6).toFixed(2)}M`;
-    } else if (absValue >= 1e3) {
-      return `${currencySymbol}${(value / 1e3).toFixed(2)}K`;
-    } else {
-      return `${currencySymbol}${value.toLocaleString('en-US', { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 2 
-      })}`;
-    }
-  };
 
   // Get currency symbol
   const getCurrencySymbol = (curr) => {
@@ -248,13 +211,13 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-900 to-blue-950 text-white relative overflow-hidden">
+    <div className="h-screen w-screen bg-gradient-to-br from-blue-950 via-slate-900 to-blue-950 text-white relative overflow-hidden fixed inset-0">
       <div className="absolute inset-0 opacity-15">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500 rounded-full filter blur-3xl animate-pulse"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-400 rounded-full filter blur-3xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
       </div>
       
-      <div className="relative z-10 max-w-md mx-auto p-6">
+      <div className="relative z-10 max-w-md mx-auto p-6" style={{ height: '100%', overflow: 'hidden' }}>
         
         <div className="bg-slate-900/80 border-2 border-cyan-500/50 rounded-2xl backdrop-blur-md shadow-[0_0_30px_rgba(34,211,238,0.2)] mb-6 overflow-hidden">
           
@@ -324,7 +287,7 @@ function App() {
                 <span className={`text-lg font-bold ${
                   isPositive ? 'text-emerald-400' : 'text-red-400'
                 }`}>
-                  {currentChange !== null ? (
+                  {currentChange != null ? (
                     <>
                       {isPositive ? '+' : ''}{currentChange.toFixed(2)}%
                     </>
@@ -346,49 +309,60 @@ function App() {
             </div>
 
             <div className="flex items-end gap-1 h-12 mt-4 px-2">
-              {[45, 52, 48, 65, 58, 70, 68, 75, 72, 80, 85, 78, 90, 88, 95].map((height, i) => (
-                <div 
-                  key={i} 
-                  className={`flex-1 rounded-t transition-all duration-300 ${
-                    isPositive ? 'bg-gradient-to-t from-emerald-500/40 to-emerald-400/60' : 'bg-gradient-to-t from-red-500/40 to-red-400/60'
-                  }`}
-                  style={{ height: `${height}%` }}
-                ></div>
-              ))}
-            </div>
-          </div>
-        </div>
+              {loadingCandles ? (
+                <div className="flex-1 flex items-center justify-center h-full">
+                  <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                </div>
+              ) : candles.length > 0 ? (
+                (() => {
+                  // Calculate min and max prices for scaling
+                  const prices = candles.flatMap(c => [c.low, c.high]);
+                  const minPrice = Math.min(...prices);
+                  const maxPrice = Math.max(...prices);
+                  const priceRange = maxPrice - minPrice || 1; // Avoid division by zero
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-900/70 border-2 border-cyan-500/40 p-4 rounded-xl backdrop-blur-md shadow-lg">
-            <div className="text-xs text-cyan-100/60 uppercase tracking-wide mb-1">Volume 24h</div>
-            {loadingMarketData ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                <span className="text-xl font-bold text-cyan-300">Loading...</span>
-              </div>
-            ) : volume24h !== null ? (
-              <div className="text-xl font-bold text-cyan-300">
-                {formatLargeNumber(volume24h, currency)}
-              </div>
-            ) : (
-              <div className="text-xl font-bold text-cyan-300">--</div>
-            )}
-          </div>
-          <div className="bg-slate-900/70 border-2 border-cyan-500/40 p-4 rounded-xl backdrop-blur-md shadow-lg">
-            <div className="text-xs text-cyan-100/60 uppercase tracking-wide mb-1">Market Cap</div>
-            {loadingMarketData ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                <span className="text-xl font-bold text-cyan-300">Loading...</span>
-              </div>
-            ) : marketCap !== null ? (
-              <div className="text-xl font-bold text-cyan-300">
-                {formatLargeNumber(marketCap, currency)}
-              </div>
-            ) : (
-              <div className="text-xl font-bold text-cyan-300">--</div>
-            )}
+                  return candles.map((candle, i) => {
+                    // Determine if candle is bullish (close >= open) or bearish (close < open)
+                    const isBullish = candle.close >= candle.open;
+                    
+                    // Calculate height as percentage of price range
+                    // Height represents the high-low range of the candle
+                    const candleRange = candle.high - candle.low;
+                    const heightPercent = priceRange > 0 ? (candleRange / priceRange) * 100 : 10;
+                    // Minimum height of 20% for visibility
+                    const minHeight = 20;
+                    const finalHeight = Math.max(heightPercent, minHeight);
+                    
+                    return (
+                      <div 
+                        key={i}
+                        className="flex-1 flex flex-col items-center justify-end"
+                        style={{ height: '100%' }}
+                        title={`Time: ${candle.time.toLocaleTimeString()}\nOpen: ${candle.open.toFixed(2)}\nHigh: ${candle.high.toFixed(2)}\nLow: ${candle.low.toFixed(2)}\nClose: ${candle.close.toFixed(2)}`}
+                      >
+                        {/* Candle body - represents open to close */}
+                        <div 
+                          className={`w-full rounded-t transition-all duration-300 ${
+                            isBullish 
+                              ? 'bg-gradient-to-t from-emerald-500/60 to-emerald-400/80 border-t border-emerald-300/50' 
+                              : 'bg-gradient-to-t from-red-500/60 to-red-400/80 border-t border-red-300/50'
+                          }`}
+                          style={{ 
+                            height: `${finalHeight}%`,
+                            minHeight: '4px'
+                          }}
+                        />
+                        {/* Optional: wick (high-low range) could be added here if needed */}
+                      </div>
+                    );
+                  });
+                })()
+              ) : (
+                <div className="flex-1 flex items-center justify-center h-full text-cyan-100/40 text-xs">
+                  No candle data
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
