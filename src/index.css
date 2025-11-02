@@ -53,7 +53,12 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background: transparent;
+  background: #000000;
+  /* Extend background to cover safe areas */
+  top: calc(-1 * env(safe-area-inset-top));
+  left: calc(-1 * env(safe-area-inset-left));
+  right: calc(-1 * env(safe-area-inset-right));
+  bottom: calc(-1 * env(safe-area-inset-bottom));
   /* Prevent scrolling bounce/overscroll */
   overscroll-behavior: none;
 }

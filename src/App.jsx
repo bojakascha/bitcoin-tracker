@@ -4,8 +4,15 @@ import coinbaseApi from './services/coinbaseApi';
 import { ECB_CURRENCIES } from './utils/ecbCurrencies';
 
 function App() {
-  const [currency, setCurrency] = useState('USD');
-  const [timeWindow, setTimeWindow] = useState('24h');
+  // Initialize from localStorage or defaults
+  const [currency, setCurrency] = useState(() => {
+    const saved = localStorage.getItem('bitcoin-tracker-currency');
+    return saved || 'USD';
+  });
+  const [timeWindow, setTimeWindow] = useState(() => {
+    const saved = localStorage.getItem('bitcoin-tracker-timeWindow');
+    return saved || '24h';
+  });
   const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
   const [showTimeMenu, setShowTimeMenu] = useState(false);
   const [currentPrice, setCurrentPrice] = useState(null);
@@ -21,10 +28,22 @@ function App() {
   // Supported time windows: 1h, 24h, 7d, 30d, 1y
   const timeWindows = ['1h', '24h', '7d', '30d', '1y'];
   
+  // Save currency to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('bitcoin-tracker-currency', currency);
+  }, [currency]);
+
+  // Save timeWindow to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('bitcoin-tracker-timeWindow', timeWindow);
+  }, [timeWindow]);
+
   // Reset timeWindow if it's set to an unsupported value (only once on mount)
   useEffect(() => {
     if (!timeWindows.includes(timeWindow)) {
-      setTimeWindow('24h');
+      const defaultWindow = '24h';
+      setTimeWindow(defaultWindow);
+      localStorage.setItem('bitcoin-tracker-timeWindow', defaultWindow);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
@@ -187,23 +206,23 @@ function App() {
 
   // Get font size class based on price length
   const getPriceFontSize = (price, currency) => {
-    if (price === null) return 'text-7xl';
+    if (price === null) return 'text-[3.375rem]'; // ~half step above text-5xl
     
     const formatted = price.toLocaleString('en-US', { 
-      minimumFractionDigits: ['JPY', 'KRW', 'CLP', 'VND'].includes(currency) ? 0 : 2, 
-      maximumFractionDigits: ['JPY', 'KRW', 'CLP', 'VND'].includes(currency) ? 0 : 2 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
     });
     
     const length = formatted.length;
     
     // Very long numbers (12+ chars) - smallest
-    if (length >= 12) return 'text-4xl';
+    if (length >= 12) return 'text-[1.6875rem]'; // ~half step above text-2xl
     // Long numbers (10-11 chars) - small
-    if (length >= 10) return 'text-5xl';
+    if (length >= 10) return 'text-[2.0625rem]'; // ~half step above text-3xl
     // Medium numbers (8-9 chars) - medium
-    if (length >= 8) return 'text-6xl';
+    if (length >= 8) return 'text-[2.625rem]'; // ~half step above text-4xl
     // Short numbers (<8 chars) - largest
-    return 'text-7xl';
+    return 'text-[3.375rem]'; // ~half step above text-5xl
   };
 
   // Format time label based on time window
@@ -290,10 +309,10 @@ function App() {
             {/* Background glow */}
             <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 via-transparent to-purple-600/10"></div>
             
-            <div className="flex items-baseline justify-between mb-4 relative">
-              <div className="flex items-baseline gap-2 flex-1 min-w-0">
+            <div className="flex items-baseline justify-between mb-4 relative gap-2">
+              <div className="flex items-baseline gap-2 flex-1 min-w-0 overflow-hidden">
                 {loading ? (
-                  <div className="flex items-center gap-2 text-7xl font-bold text-white">
+                  <div className="flex items-center gap-2 text-[3.375rem] font-bold text-white">
                     <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
                     <span>Loading...</span>
                   </div>
@@ -302,27 +321,27 @@ function App() {
                     Error: {error}
                   </div>
                 ) : currentPrice !== null ? (
-                  <span className={`${getPriceFontSize(currentPrice, currency)} font-bold text-white`} style={{textShadow: '0 0 15px rgba(251,191,36,0.7), 0 0 30px rgba(234,179,8,0.4)'}}>
+                  <span className={`${getPriceFontSize(currentPrice, currency)} font-bold text-white truncate`} style={{textShadow: '0 0 15px rgba(251,191,36,0.7), 0 0 30px rgba(234,179,8,0.4)'}}>
                     {currentPrice.toLocaleString('en-US', { 
-                      minimumFractionDigits: ['JPY', 'KRW', 'CLP', 'VND'].includes(currency) ? 0 : 2, 
-                      maximumFractionDigits: ['JPY', 'KRW', 'CLP', 'VND'].includes(currency) ? 0 : 2 
+                      minimumFractionDigits: 0, 
+                      maximumFractionDigits: 0 
                     })}
                   </span>
                 ) : (
-                  <span className="text-7xl font-bold text-white">--</span>
+                  <span className="text-[3.375rem] font-bold text-white">--</span>
                 )}
-                
-                {/* Currency Selector */}
-                <div className="relative currency-menu-container">
-                  <button 
-                    onClick={() => setShowCurrencyMenu(!showCurrencyMenu)}
-                    className="flex items-center gap-1 text-xl text-amber-400 hover:text-purple-400 transition-colors font-bold"
-                    style={{textShadow: '0 0 8px rgba(251,191,36,0.6)'}}
-                  >
-                    {currency}
-                    <ChevronDown className="w-5 h-5" />
-                  </button>
-                </div>
+              </div>
+              
+              {/* Currency Selector */}
+              <div className="relative currency-menu-container flex-shrink-0">
+                <button 
+                  onClick={() => setShowCurrencyMenu(!showCurrencyMenu)}
+                  className="flex items-center gap-1 text-xl text-amber-400 hover:text-purple-400 transition-colors font-bold"
+                  style={{textShadow: '0 0 8px rgba(251,191,36,0.6)'}}
+                >
+                  {currency}
+                  <ChevronDown className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
