@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate-ecb": "node scripts/generate-ecb-currencies.js",
+    "prebuild": "node scripts/generate-ecb-currencies.js || true",
     "build": "vite build",
     "preview": "vite preview"
   },

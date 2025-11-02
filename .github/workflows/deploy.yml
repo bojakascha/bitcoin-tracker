@@ -24,7 +24,8 @@ jobs:
         run: npm ci
         
       - name: Build
-        run: npm run build
+        run: SKIP_ECB_GENERATION=true npm run build
+        # Set SKIP_ECB_GENERATION=false if you want to regenerate currencies on each deploy
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

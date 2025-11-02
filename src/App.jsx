@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, ChevronDown, Loader2 } from 'lucide-react';
 import coinbaseApi from './services/coinbaseApi';
+import { ECB_CURRENCIES } from './utils/ecbCurrencies';
 
 function App() {
   const [currency, setCurrency] = useState('USD');
@@ -10,14 +11,8 @@ function App() {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currencies, setCurrencies] = useState([
-    { id: 'USD', name: 'United States Dollar' },
-    { id: 'EUR', name: 'Euro' },
-    { id: 'GBP', name: 'British Pound' },
-    { id: 'JPY', name: 'Japanese Yen' },
-    { id: 'CAD', name: 'Canadian Dollar' }
-  ]);
-  const [loadingCurrencies, setLoadingCurrencies] = useState(true);
+  const [currencies, setCurrencies] = useState(ECB_CURRENCIES);
+  const [loadingCurrencies, setLoadingCurrencies] = useState(false); // Using static list, no loading needed
   const [currencySearch, setCurrencySearch] = useState('');
   const [changes, setChanges] = useState({ '1h': null, '24h': null, '7d': null, '30d': null, '1y': null });
   const [candles, setCandles] = useState([]);
@@ -37,31 +32,11 @@ function App() {
   const currentChange = changes[timeWindow] != null && changes[timeWindow] !== undefined ? changes[timeWindow] : null;
   const isPositive = currentChange != null ? currentChange >= 0 : false;
 
-  // Fetch supported currencies on mount
+  // Use static ECB currency list (no API call needed)
   useEffect(() => {
-    const fetchCurrencies = async () => {
-      try {
-        const supportedCurrencies = await coinbaseApi.getSupportedCurrencies();
-        // Filter to only show fiat currencies (exclude crypto currencies like BTC, ETH, etc.)
-        const fiatCurrencies = supportedCurrencies.filter(
-          curr => !['BTC', 'ETH', 'LTC', 'BCH', 'XRP', 'XLM', 'ADA', 'DOT', 'SOL', 'USDC', 'USDT', 'DAI'].includes(curr.id)
-        );
-        // Sort by currency code
-        fiatCurrencies.sort((a, b) => a.id.localeCompare(b.id));
-        setCurrencies(fiatCurrencies);
-      } catch (err) {
-        console.error('Failed to fetch supported currencies from Coinbase:', {
-          error: err.message,
-          stack: err.stack,
-          name: err.name
-        });
-        // Keep default currencies if API fails
-      } finally {
-        setLoadingCurrencies(false);
-      }
-    };
-
-    fetchCurrencies();
+    // Sort by currency code for consistency
+    const sortedCurrencies = [...ECB_CURRENCIES].sort((a, b) => a.id.localeCompare(b.id));
+    setCurrencies(sortedCurrencies);
   }, []);
 
   // Fetch Coinbase spot price (every 30 seconds)
@@ -210,6 +185,40 @@ function App() {
     return symbols[curr] || curr + ' ';
   };
 
+  // Format time label based on time window
+  const formatTimeLabel = (date, tw) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    switch(tw) {
+      case '1h':
+        const minsAgo = Math.floor(diffMs / (1000 * 60));
+        if (minsAgo === 0) return 'Now';
+        return `-${minsAgo}m`;
+      case '24h':
+        if (diffHours === 0) return 'Now';
+        return `-${diffHours}h`;
+      case '7d':
+        if (diffDays === 0) return 'Now';
+        return diffDays === 7 ? '-7d' : `-${diffDays}d`;
+      case '30d':
+        if (diffDays === 0) return 'Now';
+        if (diffDays === 30) return '-30d';
+        if (diffDays === 15) return '-15d';
+        return `-${diffDays}d`;
+      case '1y':
+        const monthsAgo = Math.floor(diffDays / 30);
+        if (monthsAgo === 0) return 'Now';
+        if (monthsAgo === 12) return '-1y';
+        if (monthsAgo === 6) return '-6m';
+        return `-${monthsAgo}m`;
+      default:
+        return date.toLocaleDateString();
+    }
+  };
+
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-blue-950 via-slate-900 to-blue-950 text-white relative overflow-hidden fixed inset-0">
       <div className="absolute inset-0 opacity-15">
@@ -308,58 +317,101 @@ function App() {
               </div>
             </div>
 
-            <div className="flex items-end gap-1 h-12 mt-4 px-2">
-              {loadingCandles ? (
-                <div className="flex-1 flex items-center justify-center h-full">
-                  <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                </div>
-              ) : candles.length > 0 ? (
-                (() => {
-                  // Calculate min and max prices for scaling
-                  const prices = candles.flatMap(c => [c.low, c.high]);
-                  const minPrice = Math.min(...prices);
-                  const maxPrice = Math.max(...prices);
-                  const priceRange = maxPrice - minPrice || 1; // Avoid division by zero
-
-                  return candles.map((candle, i) => {
-                    // Determine if candle is bullish (close >= open) or bearish (close < open)
-                    const isBullish = candle.close >= candle.open;
+            <div className="relative">
+              {/* Graph container */}
+              <div className="relative flex items-center justify-center gap-1 h-24 mt-6 mb-2 px-2 py-2">
+                {/* X-axis line */}
+                <div className="absolute left-2 right-2 top-1/2 h-px bg-cyan-500/30 z-0 transform -translate-y-1/2"></div>
+                
+                {loadingCandles ? (
+                  <div className="flex-1 flex items-center justify-center h-full">
+                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                  </div>
+                ) : candles.length > 0 ? (
+                  (() => {
+                    // Calculate candle ranges for normalization
+                    const candleRanges = candles.map(c => c.high - c.low);
+                    const maxRange = Math.max(...candleRanges);
                     
-                    // Calculate height as percentage of price range
-                    // Height represents the high-low range of the candle
-                    const candleRange = candle.high - candle.low;
-                    const heightPercent = priceRange > 0 ? (candleRange / priceRange) * 100 : 10;
-                    // Minimum height of 20% for visibility
-                    const minHeight = 20;
-                    const finalHeight = Math.max(heightPercent, minHeight);
-                    
-                    return (
-                      <div 
-                        key={i}
-                        className="flex-1 flex flex-col items-center justify-end"
-                        style={{ height: '100%' }}
-                        title={`Time: ${candle.time.toLocaleTimeString()}\nOpen: ${candle.open.toFixed(2)}\nHigh: ${candle.high.toFixed(2)}\nLow: ${candle.low.toFixed(2)}\nClose: ${candle.close.toFixed(2)}`}
-                      >
-                        {/* Candle body - represents open to close */}
+                    return candles.map((candle, i) => {
+                      // Determine if candle is bullish (close >= open) or bearish (close < open)
+                      const isBullish = candle.close >= candle.open;
+                      
+                      // Calculate normalized height: tallest candle uses 70% of container (leaving 30% for padding)
+                      const candleRange = candle.high - candle.low;
+                      const normalizedHeight = maxRange > 0 ? (candleRange / maxRange) * 70 : 5;
+                      const finalHeight = Math.max(normalizedHeight, 5); // Minimum 5% for visibility
+                      
+                      return (
                         <div 
-                          className={`w-full rounded-t transition-all duration-300 ${
-                            isBullish 
-                              ? 'bg-gradient-to-t from-emerald-500/60 to-emerald-400/80 border-t border-emerald-300/50' 
-                              : 'bg-gradient-to-t from-red-500/60 to-red-400/80 border-t border-red-300/50'
-                          }`}
-                          style={{ 
-                            height: `${finalHeight}%`,
-                            minHeight: '4px'
-                          }}
-                        />
-                        {/* Optional: wick (high-low range) could be added here if needed */}
-                      </div>
-                    );
-                  });
-                })()
-              ) : (
-                <div className="flex-1 flex items-center justify-center h-full text-cyan-100/40 text-xs">
-                  No candle data
+                          key={i}
+                          className="flex-1 flex flex-col items-center relative"
+                          style={{ height: '100%' }}
+                          title={`Time: ${candle.time.toLocaleTimeString()}\nOpen: ${candle.open.toFixed(2)}\nHigh: ${candle.high.toFixed(2)}\nLow: ${candle.low.toFixed(2)}\nClose: ${candle.close.toFixed(2)}`}
+                        >
+                          {/* Candle bar - positioned above or below center x-axis */}
+                          <div 
+                            className={`w-full transition-all duration-300 absolute ${
+                              isBullish 
+                                ? 'bg-gradient-to-t from-emerald-500/60 to-emerald-400/80 border-t border-emerald-300/50 rounded-t' 
+                                : 'bg-gradient-to-b from-red-500/60 to-red-400/80 border-b border-red-300/50 rounded-b'
+                            }`}
+                            style={{ 
+                              height: `${finalHeight}%`,
+                              minHeight: '2px',
+                              bottom: isBullish ? '50%' : 'auto',
+                              top: isBullish ? 'auto' : '50%',
+                              transform: isBullish ? 'translateY(0)' : 'translateY(0)'
+                            }}
+                          />
+                        </div>
+                      );
+                    });
+                  })()
+                ) : (
+                  <div className="flex-1 flex items-center justify-center h-full text-cyan-100/40 text-xs">
+                    No candle data
+                  </div>
+                )}
+              </div>
+
+              {/* Time labels below graph */}
+              {!loadingCandles && candles.length > 0 && (
+                <div className="flex items-center justify-center gap-1 px-2 mb-4">
+                  {(() => {
+                    // Show labels at start, middle (if enough candles), and end
+                    const labelIndices = [];
+                    if (candles.length === 1) {
+                      labelIndices.push(0);
+                    } else if (candles.length === 2) {
+                      labelIndices.push(0, 1);
+                    } else {
+                      labelIndices.push(0); // First
+                      if (candles.length > 3) {
+                        labelIndices.push(Math.floor(candles.length / 2)); // Middle
+                      }
+                      labelIndices.push(candles.length - 1); // Last
+                    }
+
+                    return candles.map((candle, i) => {
+                      const shouldShowLabel = labelIndices.includes(i);
+                      
+                      return (
+                        <div 
+                          key={i}
+                          className="flex-1 flex items-center justify-center"
+                        >
+                          {shouldShowLabel ? (
+                            <span className="text-xs text-cyan-100/50">
+                              {formatTimeLabel(candle.time, timeWindow)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-transparent">•</span>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               )}
             </div>

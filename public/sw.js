@@ -40,11 +40,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip caching for API calls
+  // Skip caching for API calls - let them pass through directly
   if (event.request.url.includes('/api/') || 
       event.request.url.includes('api.coinbase.com') ||
+      event.request.url.includes('api.exchange.coinbase.com') ||
+      event.request.url.includes('data-api.ecb.europa.eu') ||
       event.request.url.includes('api.coinlore.net')) {
-    return fetch(event.request);
+    return; // Don't intercept, let browser handle API calls directly
   }
 
   event.respondWith(
