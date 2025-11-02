@@ -185,6 +185,27 @@ function App() {
     return symbols[curr] || curr + ' ';
   };
 
+  // Get font size class based on price length
+  const getPriceFontSize = (price, currency) => {
+    if (price === null) return 'text-7xl';
+    
+    const formatted = price.toLocaleString('en-US', { 
+      minimumFractionDigits: ['JPY', 'KRW', 'CLP', 'VND'].includes(currency) ? 0 : 2, 
+      maximumFractionDigits: ['JPY', 'KRW', 'CLP', 'VND'].includes(currency) ? 0 : 2 
+    });
+    
+    const length = formatted.length;
+    
+    // Very long numbers (12+ chars) - smallest
+    if (length >= 12) return 'text-4xl';
+    // Long numbers (10-11 chars) - small
+    if (length >= 10) return 'text-5xl';
+    // Medium numbers (8-9 chars) - medium
+    if (length >= 8) return 'text-6xl';
+    // Short numbers (<8 chars) - largest
+    return 'text-7xl';
+  };
+
   // Format time label based on time window
   const formatTimeLabel = (date, tw) => {
     const now = new Date();
@@ -220,39 +241,60 @@ function App() {
   };
 
   return (
-    <div className="h-screen w-screen bg-gradient-to-br from-blue-950 via-slate-900 to-blue-950 text-white relative overflow-hidden fixed inset-0">
-      <div className="absolute inset-0 opacity-15">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500 rounded-full filter blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-400 rounded-full filter blur-3xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
+    <div className="h-screen w-screen bg-black text-white relative overflow-hidden fixed inset-0">
+      {/* Intense animated background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600 rounded-full filter blur-3xl opacity-40 animate-pulse" style={{animationDelay: '0.7s'}}></div>
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-orange-500 rounded-full filter blur-3xl opacity-25 animate-pulse" style={{animationDelay: '1.4s'}}></div>
+        
+        {/* Scanline effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent animate-pulse"></div>
+        
+        {/* Grid overlay */}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: 'linear-gradient(#fbbf24 1px, transparent 1px), linear-gradient(90deg, #fbbf24 1px, transparent 1px)',
+          backgroundSize: '50px 50px'
+        }}></div>
       </div>
       
       <div className="relative z-10 max-w-md mx-auto p-6" style={{ height: '100%', overflow: 'hidden' }}>
         
-        <div className="bg-slate-900/80 border-2 border-cyan-500/50 rounded-2xl backdrop-blur-md shadow-[0_0_30px_rgba(34,211,238,0.2)] mb-6 overflow-hidden">
+        <div className="bg-slate-950/90 border-2 border-amber-400 rounded-2xl backdrop-blur-md mb-6 overflow-hidden">
           
-          <div className="bg-gradient-to-r from-cyan-500/20 to-amber-400/20 border-b border-cyan-500/30 px-6 py-4 flex items-center justify-between">
+          {/* Bitcoin Symbol Header */}
+          <div className="bg-gradient-to-r from-amber-600/30 via-purple-600/30 to-orange-600/30 border-b-2 border-amber-400/50 px-6 py-4 flex items-center justify-between relative">
+            {/* Animated glow line */}
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-pulse"></div>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 flex items-center justify-center shadow-[0_0_35px_rgba(251,191,36,1),0_0_60px_rgba(251,191,36,0.6)] relative">
-                <span className="text-3xl font-bold text-white" style={{textShadow: '0 0 10px rgba(251,191,36,1), 0 0 20px rgba(251,191,36,0.8), 0 0 30px rgba(251,191,36,0.6), 0 0 40px rgba(251,146,60,0.4)'}}>₿</span>
-                <div className="absolute inset-0 rounded-full border-2 border-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.8)] animate-pulse"></div>
-                <div className="absolute inset-0 rounded-full bg-amber-400/20 blur-md animate-pulse"></div>
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-yellow-600 flex items-center justify-center relative">
+                <span className="text-3xl font-bold text-black">₿</span>
+                <div className="absolute inset-0 rounded-full border-2 border-amber-300"></div>
+                <div className="absolute inset-0 rounded-full border border-yellow-400/50"></div>
               </div>
               <div>
-                <div className="text-base font-semibold text-white">Bitcoin</div>
-                <div className="text-xs text-cyan-100/60">BTC</div>
+                <div className="text-lg font-bold text-white">Bitcoin</div>
+                <div className="text-xs text-amber-300/80 font-mono">BTC</div>
               </div>
             </div>
-            <div className={`w-2 h-2 rounded-full ${
-              loading ? 'bg-yellow-400' : error ? 'bg-red-400' : 'bg-cyan-400'
-            } shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse`}></div>
+            <div className="flex gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                loading ? 'bg-yellow-400' : error ? 'bg-red-400' : 'bg-amber-400'
+              } shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse`}></div>
+              <div className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)] animate-pulse" style={{animationDelay: '0.3s'}}></div>
+            </div>
           </div>
 
-          <div className="px-6 py-6">
-            <div className="flex items-baseline justify-between mb-4">
-              <div className="flex items-baseline gap-2">
+          {/* Price Display */}
+          <div className="px-6 py-6 relative">
+            {/* Background glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 via-transparent to-purple-600/10"></div>
+            
+            <div className="flex items-baseline justify-between mb-4 relative">
+              <div className="flex items-baseline gap-2 flex-1 min-w-0">
                 {loading ? (
-                  <div className="flex items-center gap-2 text-4xl font-bold text-white">
-                    <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+                  <div className="flex items-center gap-2 text-7xl font-bold text-white">
+                    <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
                     <span>Loading...</span>
                   </div>
                 ) : error ? (
@@ -260,42 +302,45 @@ function App() {
                     Error: {error}
                   </div>
                 ) : currentPrice !== null ? (
-                  <span className="text-4xl font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                  <span className={`${getPriceFontSize(currentPrice, currency)} font-bold text-white`} style={{textShadow: '0 0 15px rgba(251,191,36,0.7), 0 0 30px rgba(234,179,8,0.4)'}}>
                     {currentPrice.toLocaleString('en-US', { 
                       minimumFractionDigits: ['JPY', 'KRW', 'CLP', 'VND'].includes(currency) ? 0 : 2, 
                       maximumFractionDigits: ['JPY', 'KRW', 'CLP', 'VND'].includes(currency) ? 0 : 2 
                     })}
                   </span>
                 ) : (
-                  <span className="text-4xl font-bold text-white">--</span>
+                  <span className="text-7xl font-bold text-white">--</span>
                 )}
                 
+                {/* Currency Selector */}
                 <div className="relative currency-menu-container">
                   <button 
                     onClick={() => setShowCurrencyMenu(!showCurrencyMenu)}
-                    className="flex items-center gap-1 text-lg text-cyan-300 hover:text-cyan-200 transition-colors"
+                    className="flex items-center gap-1 text-xl text-amber-400 hover:text-purple-400 transition-colors font-bold"
+                    style={{textShadow: '0 0 8px rgba(251,191,36,0.6)'}}
                   >
                     {currency}
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-5 h-5" />
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+            {/* Change Display */}
+            <div className="flex items-center justify-between mb-6 relative">
+              <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 ${
                 isPositive 
-                  ? 'bg-emerald-500/20 border border-emerald-500/40' 
-                  : 'bg-red-500/20 border border-red-500/40'
+                  ? 'bg-emerald-500/20 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.5)]' 
+                  : 'bg-red-500/20 border-red-400 shadow-[0_0_20px_rgba(248,113,113,0.5)]'
               }`}>
                 {isPositive ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  <TrendingUp className="w-5 h-5 text-emerald-400" />
                 ) : (
-                  <TrendingDown className="w-4 h-4 text-red-400" />
+                  <TrendingDown className="w-5 h-5 text-red-400" />
                 )}
-                <span className={`text-lg font-bold ${
+                <span className={`text-xl font-bold ${
                   isPositive ? 'text-emerald-400' : 'text-red-400'
-                }`}>
+                }`} style={{textShadow: isPositive ? '0 0 8px rgba(52,211,153,0.6)' : '0 0 8px rgba(248,113,113,0.6)'}}>
                   {currentChange != null ? (
                     <>
                       {isPositive ? '+' : ''}{currentChange.toFixed(2)}%
@@ -305,28 +350,20 @@ function App() {
                   )}
                 </span>
               </div>
-
-              <div className="relative time-menu-container">
-                <button 
-                  onClick={() => setShowTimeMenu(!showTimeMenu)}
-                  className="flex items-center gap-1 px-3 py-2 text-sm text-cyan-300 bg-slate-800/60 border border-cyan-500/30 rounded-lg hover:border-cyan-500/50 transition-colors"
-                >
-                  {timeWindow}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-              </div>
             </div>
 
             <div className="relative">
-              {/* Graph container */}
-              <div className="relative flex items-center justify-center gap-1 h-24 mt-6 mb-2 px-2 py-2">
-                {/* X-axis line */}
-                <div className="absolute left-2 right-2 top-1/2 h-px bg-cyan-500/30 z-0 transform -translate-y-1/2"></div>
-                
-                {loadingCandles ? (
-                  <div className="flex-1 flex items-center justify-center h-full">
-                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                  </div>
+              {/* Mini Chart Visualization */}
+              <div className="space-y-2">
+                {/* Graph container */}
+                <div className="relative flex items-center justify-center gap-1 h-24 mt-6 mb-2 px-2 py-2">
+                  {/* X-axis line */}
+                  <div className="absolute left-2 right-2 top-1/2 h-px bg-amber-400/30 z-0 transform -translate-y-1/2"></div>
+                  
+                  {loadingCandles ? (
+                    <div className="flex-1 flex items-center justify-center h-full">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                    </div>
                 ) : candles.length > 0 ? (
                   (() => {
                     // Calculate candle ranges for normalization
@@ -353,8 +390,8 @@ function App() {
                           <div 
                             className={`w-full transition-all duration-300 absolute ${
                               isBullish 
-                                ? 'bg-gradient-to-t from-emerald-500/60 to-emerald-400/80 border-t border-emerald-300/50 rounded-t' 
-                                : 'bg-gradient-to-b from-red-500/60 to-red-400/80 border-b border-red-300/50 rounded-b'
+                                ? 'bg-gradient-to-t from-emerald-600 via-emerald-400 to-green-400 rounded-t' 
+                                : 'bg-gradient-to-t from-red-500 via-orange-500 to-amber-400 rounded-b'
                             }`}
                             style={{ 
                               height: `${finalHeight}%`,
@@ -369,51 +406,65 @@ function App() {
                     });
                   })()
                 ) : (
-                  <div className="flex-1 flex items-center justify-center h-full text-cyan-100/40 text-xs">
+                  <div className="flex-1 flex items-center justify-center h-full text-amber-300/40 text-xs">
                     No candle data
                   </div>
                 )}
-              </div>
-
-              {/* Time labels below graph */}
-              {!loadingCandles && candles.length > 0 && (
-                <div className="flex items-center justify-center gap-1 px-2 mb-4">
-                  {(() => {
-                    // Show labels at start, middle (if enough candles), and end
-                    const labelIndices = [];
-                    if (candles.length === 1) {
-                      labelIndices.push(0);
-                    } else if (candles.length === 2) {
-                      labelIndices.push(0, 1);
-                    } else {
-                      labelIndices.push(0); // First
-                      if (candles.length > 3) {
-                        labelIndices.push(Math.floor(candles.length / 2)); // Middle
-                      }
-                      labelIndices.push(candles.length - 1); // Last
-                    }
-
-                    return candles.map((candle, i) => {
-                      const shouldShowLabel = labelIndices.includes(i);
-                      
-                      return (
-                        <div 
-                          key={i}
-                          className="flex-1 flex items-center justify-center"
-                        >
-                          {shouldShowLabel ? (
-                            <span className="text-xs text-cyan-100/50">
-                              {formatTimeLabel(candle.time, timeWindow)}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-transparent">•</span>
-                          )}
-                        </div>
-                      );
-                    });
-                  })()}
                 </div>
-              )}
+                
+                {/* Time indicators */}
+                {!loadingCandles && candles.length > 0 && (
+                  <div className="flex items-center justify-center gap-1 px-2 mb-2">
+                    {(() => {
+                      // Show labels at start, middle (if enough candles), and end
+                      const labelIndices = [];
+                      if (candles.length === 1) {
+                        labelIndices.push(0);
+                      } else if (candles.length === 2) {
+                        labelIndices.push(0, 1);
+                      } else {
+                        labelIndices.push(0); // First
+                        if (candles.length > 3) {
+                          labelIndices.push(Math.floor(candles.length / 2)); // Middle
+                        }
+                        labelIndices.push(candles.length - 1); // Last
+                      }
+
+                      return candles.map((candle, i) => {
+                        const shouldShowLabel = labelIndices.includes(i);
+                        
+                        return (
+                          <div 
+                            key={i}
+                            className="flex-1 flex items-center justify-center"
+                          >
+                            {shouldShowLabel ? (
+                              <span className="text-xs text-amber-300/50">
+                                {formatTimeLabel(candle.time, timeWindow)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-transparent">•</span>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+                
+                {/* Time Window Selector */}
+                <div className="flex justify-center pt-2">
+                  <div className="relative time-menu-container">
+                    <button 
+                      onClick={() => setShowTimeMenu(!showTimeMenu)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 bg-slate-900/80 border-2 border-amber-400/50 rounded-xl hover:border-purple-400/70 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all font-bold"
+                    >
+                      {timeWindow}
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -436,14 +487,14 @@ function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <div 
               data-currency-modal
-              className="w-full max-w-md bg-slate-800/98 border-2 border-cyan-500/50 rounded-2xl shadow-[0_0_40px_rgba(34,211,238,0.4)] backdrop-blur-md overflow-hidden pointer-events-auto max-h-[80vh] flex flex-col"
+              className="w-full max-w-md bg-slate-950/98 border-2 border-amber-400/70 rounded-2xl shadow-[0_0_30px_rgba(251,191,36,0.5)] backdrop-blur-md overflow-hidden pointer-events-auto max-h-[80vh] flex flex-col"
               onMouseDown={(e) => {
                 // Prevent backdrop click when clicking inside modal
                 e.stopPropagation();
               }}
             >
               {/* Header */}
-              <div className="p-4 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-amber-400/10">
+              <div className="p-4 border-b border-amber-400/30 bg-gradient-to-r from-amber-600/30 via-purple-600/30 to-orange-600/30">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold text-white">Select Currency</h3>
                   <button
@@ -454,7 +505,7 @@ function App() {
                       setShowCurrencyMenu(false);
                       setCurrencySearch('');
                     }}
-                    className="text-cyan-300 hover:text-cyan-200 transition-colors text-xl font-bold"
+                    className="text-amber-300 hover:text-purple-400 transition-colors text-xl font-bold"
                   >
                     ✕
                   </button>
@@ -464,7 +515,7 @@ function App() {
                   placeholder="Search currencies..."
                   value={currencySearch}
                   onChange={(e) => setCurrencySearch(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-900/80 border border-cyan-500/30 rounded-lg text-sm text-white placeholder-cyan-100/50 focus:outline-none focus:border-cyan-500/50"
+                  className="w-full px-4 py-2 bg-slate-900/80 border border-amber-400/30 rounded-lg text-sm text-white placeholder-amber-100/50 focus:outline-none focus:border-amber-400/50"
                   autoFocus
                 />
               </div>
@@ -472,12 +523,12 @@ function App() {
               {/* Currency List - Scrollable */}
               <div className="overflow-y-auto flex-1">
                 {loadingCurrencies ? (
-                  <div className="px-4 py-12 text-center text-cyan-100/60 text-sm">
-                    <Loader2 className="w-6 h-6 animate-spin text-cyan-400 mx-auto mb-2" />
+                  <div className="px-4 py-12 text-center text-amber-100/60 text-sm">
+                    <Loader2 className="w-6 h-6 animate-spin text-amber-400 mx-auto mb-2" />
                     Loading currencies...
                   </div>
                 ) : filteredCurrencies.length === 0 ? (
-                  <div className="px-4 py-12 text-center text-cyan-100/60 text-sm">
+                  <div className="px-4 py-12 text-center text-amber-100/60 text-sm">
                     No currencies found
                   </div>
                 ) : (
@@ -503,13 +554,13 @@ function App() {
                             e.stopPropagation();
                             handleCurrencySelect();
                           }}
-                          className={`w-full px-4 py-3 text-left rounded-lg hover:bg-cyan-500/20 transition-colors mb-1 cursor-pointer ${
-                            curr.id === currency ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'text-cyan-100/80'
+                          className={`block w-full px-5 py-3 text-left text-sm hover:bg-gradient-to-r hover:from-amber-600/30 hover:to-purple-600/30 transition-all font-bold ${
+                            curr.id === currency ? 'bg-gradient-to-r from-amber-600/40 to-purple-600/40 text-amber-300' : 'text-amber-100/90'
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-base">{curr.id}</span>
-                            <span className="text-xs text-cyan-100/50 text-right ml-4 flex-1">{curr.name}</span>
+                            <span>{curr.id}</span>
+                            <span className="text-xs text-amber-100/50 text-right ml-4 flex-1">{curr.name}</span>
                           </div>
                         </button>
                       );
@@ -537,14 +588,14 @@ function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <div 
               data-time-modal
-              className="w-full max-w-xs bg-slate-800/98 border-2 border-cyan-500/50 rounded-2xl shadow-[0_0_40px_rgba(34,211,238,0.4)] backdrop-blur-md overflow-hidden pointer-events-auto max-h-[80vh] flex flex-col"
+              className="w-full max-w-xs bg-slate-950/98 border-2 border-amber-400/70 rounded-2xl shadow-[0_0_30px_rgba(251,191,36,0.5)] backdrop-blur-md overflow-hidden pointer-events-auto max-h-[80vh] flex flex-col"
               onMouseDown={(e) => {
                 // Prevent backdrop click when clicking inside modal
                 e.stopPropagation();
               }}
             >
               {/* Header */}
-              <div className="p-4 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-amber-400/10">
+              <div className="p-4 border-b border-amber-400/30 bg-gradient-to-r from-amber-600/30 via-purple-600/30 to-orange-600/30">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">Select Time Interval</h3>
                   <button
@@ -554,7 +605,7 @@ function App() {
                       e.stopPropagation();
                       setShowTimeMenu(false);
                     }}
-                    className="text-cyan-300 hover:text-cyan-200 transition-colors text-xl font-bold"
+                    className="text-amber-300 hover:text-purple-400 transition-colors text-xl font-bold"
                   >
                     ✕
                   </button>
@@ -583,11 +634,11 @@ function App() {
                         e.stopPropagation();
                         handleTimeSelect();
                       }}
-                      className={`w-full px-4 py-3 text-left rounded-lg hover:bg-cyan-500/20 transition-colors mb-1 cursor-pointer ${
-                        tw === timeWindow ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'text-cyan-100/80'
+                      className={`block w-full px-5 py-3 text-left text-sm hover:bg-gradient-to-r hover:from-amber-600/30 hover:to-purple-600/30 transition-all font-bold whitespace-nowrap ${
+                        tw === timeWindow ? 'bg-gradient-to-r from-amber-600/40 to-purple-600/40 text-amber-300' : 'text-amber-100/90'
                       }`}
                     >
-                      <span className="font-semibold text-base">{tw}</span>
+                      {tw}
                     </button>
                   );
                 })}

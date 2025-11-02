@@ -197,11 +197,13 @@ class EcbApi {
       const latestKey = observationKeys[observationKeys.length - 1];
       const currencyPerEur = parseFloat(observations[latestKey][0]); // First dimension value
       
-      // ECB returns {currency} per EUR (e.g., USD per EUR)
-      // To get EUR->currency, we invert: EUR->currency = 1 / (currency->EUR)
-      const eurToCurrency = 1.0 / currencyPerEur;
+      // ECB returns "{currency} per EUR" (e.g., D.USD.EUR = 1.05 means 1.05 USD = 1 EUR)
+      // This IS already EUR->currency, so we use it directly (no inversion needed)
+      // Example: D.USD.EUR = 1.05 means EUR->USD = 1.05 (1 EUR = 1.05 USD)
+      // Example: D.SEK.EUR = 11.5 means EUR->SEK = 11.5 (1 EUR = 11.5 SEK)
+      const eurToCurrency = currencyPerEur;
       
-      console.log(`ECB API: Retrieved ${currency}->EUR rate: ${currencyPerEur}, inverted to EUR->${currency}: ${eurToCurrency}`);
+      console.log(`ECB API: Retrieved EUR->${currency} rate: ${eurToCurrency} (from D.${currency}.EUR = ${currencyPerEur})`);
 
       return eurToCurrency;
     } catch (error) {
@@ -299,9 +301,11 @@ class EcbApi {
       // Get the most recent available rate
       const latestKey = observationKeys[observationKeys.length - 1];
       const currencyPerEur = parseFloat(observations[latestKey][0]);
-      const eurToCurrency = 1.0 / currencyPerEur;
       
-      console.log(`ECB API fallback: Retrieved latest available ${currency}->EUR rate: ${currencyPerEur}, inverted to EUR->${currency}: ${eurToCurrency} (from 90-day search)`);
+      // ECB returns "{currency} per EUR" which IS already EUR->currency (no inversion needed)
+      const eurToCurrency = currencyPerEur;
+      
+      console.log(`ECB API fallback: Retrieved latest available EUR->${currency} rate: ${eurToCurrency} (from D.${currency}.EUR = ${currencyPerEur}, 90-day search)`);
 
       return eurToCurrency;
     } catch (error) {

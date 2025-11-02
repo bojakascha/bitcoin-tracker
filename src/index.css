@@ -12,9 +12,9 @@ html {
   position: fixed;
   top: 0;
   left: 0;
-  /* Match the app's gradient: from-blue-950 via-slate-900 to-blue-950 */
+  /* Black background to match neon gold theme */
   /* Extend background to cover safe areas by using negative positioning */
-  background: linear-gradient(to bottom right, #172554, #0f172a, #172554);
+  background: #000000;
   top: calc(-1 * env(safe-area-inset-top));
   left: calc(-1 * env(safe-area-inset-left));
   right: calc(-1 * env(safe-area-inset-right));
@@ -28,8 +28,8 @@ body {
   height: -webkit-fill-available;
   margin: 0;
   padding: 0;
-  /* Match the app's gradient: from-blue-950 via-slate-900 to-blue-950 */
-  background: linear-gradient(to bottom right, #172554, #0f172a, #172554);
+  /* Black background to match neon gold theme */
+  background: #000000;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none; /* Prevent pull-to-refresh and overscroll */
