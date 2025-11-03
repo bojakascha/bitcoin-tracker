@@ -132,8 +132,19 @@ function App() {
 
   // Fetch candlestick data when currency or timeWindow changes
   useEffect(() => {
+    // Track if this is the initial fetch (currency/timeWindow changed) vs periodic refresh
+    let isInitialFetch = true;
+    
     const fetchCandles = async () => {
-      setLoadingCandles(true);
+      const wasInitialFetch = isInitialFetch;
+      // Only show loading state and clear candles on initial fetch (currency/timeWindow change)
+      if (wasInitialFetch) {
+        setLoadingCandles(true);
+        setCandles([]);
+        isInitialFetch = false;
+      }
+      // On periodic refresh, keep old candles visible (no loading indicator)
+      
       try {
         const candleData = await coinbaseApi.getBtcCandlesForTimeWindow(currency, timeWindow);
         setCandles(candleData);
@@ -144,10 +155,14 @@ function App() {
           error: err.message,
           stack: err.stack
         });
-        // Set empty array on error
-        setCandles([]);
+        // Only clear candles on error during initial fetch (don't clear existing on update failure)
+        if (wasInitialFetch) {
+          setCandles([]);
+        }
       } finally {
-        setLoadingCandles(false);
+        if (wasInitialFetch) {
+          setLoadingCandles(false);
+        }
       }
     };
 
@@ -311,22 +326,22 @@ function App() {
             
             <div className="flex items-baseline justify-between mb-4 relative gap-2">
               <div className="flex items-baseline gap-2 flex-1 min-w-0 overflow-hidden">
-                {loading ? (
-                  <div className="flex items-center gap-2 text-[3.375rem] font-bold text-white">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
-                    <span>Loading...</span>
-                  </div>
-                ) : error ? (
+                {error ? (
                   <div className="text-2xl font-bold text-red-400">
                     Error: {error}
                   </div>
                 ) : currentPrice !== null ? (
-                  <span className={`${getPriceFontSize(currentPrice, currency)} font-bold text-white truncate`} style={{textShadow: '0 0 15px rgba(251,191,36,0.7), 0 0 30px rgba(234,179,8,0.4)'}}>
+                  <span 
+                    className={`${getPriceFontSize(currentPrice, currency)} font-bold text-white truncate ${loading ? 'price-loading' : ''}`} 
+                    style={{textShadow: '0 0 15px rgba(251,191,36,0.7), 0 0 30px rgba(234,179,8,0.4)'}}
+                  >
                     {currentPrice.toLocaleString('en-US', { 
                       minimumFractionDigits: 0, 
                       maximumFractionDigits: 0 
                     })}
                   </span>
+                ) : loading ? (
+                  <span className="text-[3.375rem] font-bold text-white/40 price-loading">--</span>
                 ) : (
                   <span className="text-[3.375rem] font-bold text-white">--</span>
                 )}
@@ -379,11 +394,7 @@ function App() {
                   {/* X-axis line */}
                   <div className="absolute left-2 right-2 top-1/2 h-px bg-amber-400/30 z-0 transform -translate-y-1/2"></div>
                   
-                  {loadingCandles ? (
-                    <div className="flex-1 flex items-center justify-center h-full">
-                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                    </div>
-                ) : candles.length > 0 ? (
+                  {candles.length > 0 ? (
                   (() => {
                     // Calculate candle ranges for normalization
                     const candleRanges = candles.map(c => c.high - c.low);
@@ -424,6 +435,10 @@ function App() {
                       );
                     });
                   })()
+                ) : loadingCandles ? (
+                  <div className="flex-1 flex items-center justify-center h-full">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                  </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center h-full text-amber-300/40 text-xs">
                     No candle data
@@ -432,7 +447,7 @@ function App() {
                 </div>
                 
                 {/* Time indicators */}
-                {!loadingCandles && candles.length > 0 && (
+                {candles.length > 0 && (
                   <div className="flex items-center justify-center gap-1 px-2 mb-2">
                     {(() => {
                       // Show labels at start, middle (if enough candles), and end

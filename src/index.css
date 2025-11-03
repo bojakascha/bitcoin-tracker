@@ -62,3 +62,48 @@ body {
   /* Prevent scrolling bounce/overscroll */
   overscroll-behavior: none;
 }
+
+/* Minimalistic price loading animation */
+@keyframes price-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes price-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.price-loading {
+  animation: price-pulse 1.2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.price-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(251, 191, 36, 0.4) 30%,
+    rgba(251, 191, 36, 0.9) 50%,
+    rgba(251, 191, 36, 0.4) 70%,
+    transparent 100%
+  );
+  animation: price-shimmer 1.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
